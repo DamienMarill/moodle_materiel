@@ -1,0 +1,50 @@
+/**
+ * Styles for materiel table and filters
+ *
+ * @package    local_materiel
+ * @copyright  2025 Your Name
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* Filter buttons */
+.filter-btn.active {
+    font-weight: bold;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Sortable headers */
+.materiel-table .sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 20px;
+}
+
+.materiel-table .sortable:hover {
+    text-decoration: underline;
+}
+
+.materiel-table .sort-indicator {
+    font-size: 0.8em;
+    display: inline-block;
+    transition: opacity 0.2s;
+}
+
+/* Search input */
+#materiel-search {
+    max-width: 300px;
+    display: inline-block !important;
+}
+
+/* Responsive table */
+@media (max-width: 768px) {
+    .filter-btn {
+        margin-bottom: 5px;
+    }
+
+    #materiel-search {
+        width: 100% !important;
+        max-width: 100%;
+        margin-top: 10px;
+    }
+}

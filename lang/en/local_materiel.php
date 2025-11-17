@@ -95,7 +95,8 @@ $string['checkin_confirm'] = 'Are you sure you want to check in this equipment?'
 // Descriptions.
 $string['checkout_description'] = 'Select a user to assign this equipment to.';
 
-// Tabs.
+// Filters and search.
+$string['filter_by_status'] = 'Filter by status';
 $string['all_materiel'] = 'All equipment';
 $string['materiel_in_use'] = 'In use';
 $string['materiel_available'] = 'Available';

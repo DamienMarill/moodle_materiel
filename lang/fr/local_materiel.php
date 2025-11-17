@@ -95,7 +95,8 @@ $string['checkin_confirm'] = 'Êtes-vous sûr de vouloir récupérer ce matérie
 // Descriptions.
 $string['checkout_description'] = 'Sélectionnez un utilisateur à qui confier ce matériel.';
 
-// Onglets.
+// Filtres et recherche.
+$string['filter_by_status'] = 'Filtrer par statut';
 $string['all_materiel'] = 'Tout le matériel';
 $string['materiel_in_use'] = 'En cours d\'utilisation';
 $string['materiel_available'] = 'Disponible';

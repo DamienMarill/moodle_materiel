@@ -37,10 +37,11 @@ $PAGE->set_url(new moodle_url('/local/materiel/index.php'));
 $PAGE->set_context($context);
 $PAGE->set_title(get_string('pluginname', 'local_materiel'));
 $PAGE->set_heading(get_string('pluginname', 'local_materiel'));
+$PAGE->requires->js(new moodle_url('/local/materiel/js/materiel_table.js'));
+$PAGE->requires->css(new moodle_url('/local/materiel/styles/materiel.css'));
 
 // Get filter parameters.
 $filtertype = optional_param('type', 0, PARAM_INT);
-$filterstatus = optional_param('status', '', PARAM_ALPHA);
 
 echo $OUTPUT->header();
 
@@ -63,24 +64,36 @@ echo html_writer::link(
 );
 echo html_writer::end_div();
 
-// Tabs for different views.
-$tabs = [];
-$tabs[] = new tabobject('all', new moodle_url('/local/materiel/index.php'), get_string('all_materiel', 'local_materiel'));
-$tabs[] = new tabobject('inuse', new moodle_url('/local/materiel/index.php', ['status' => 'in_use']),
-    get_string('materiel_in_use', 'local_materiel'));
-$tabs[] = new tabobject('available', new moodle_url('/local/materiel/index.php', ['status' => 'available']),
-    get_string('materiel_available', 'local_materiel'));
+// Filter buttons and search.
+echo html_writer::start_div('mb-3');
+echo html_writer::tag('label', get_string('filter_by_status', 'local_materiel') . ':', ['class' => 'mr-2']);
+echo html_writer::tag('button', get_string('all_materiel', 'local_materiel'),
+    ['class' => 'btn btn-sm btn-outline-primary mr-2 filter-btn active', 'data-filter' => 'all']);
+echo html_writer::tag('button', get_string('materiel_available', 'local_materiel'),
+    ['class' => 'btn btn-sm btn-outline-success mr-2 filter-btn', 'data-filter' => 'available']);
+echo html_writer::tag('button', get_string('materiel_in_use', 'local_materiel'),
+    ['class' => 'btn btn-sm btn-outline-warning mr-2 filter-btn', 'data-filter' => 'in_use']);
+echo html_writer::tag('button', get_string('status_maintenance', 'local_materiel'),
+    ['class' => 'btn btn-sm btn-outline-info mr-2 filter-btn', 'data-filter' => 'maintenance']);
+echo html_writer::tag('button', get_string('status_retired', 'local_materiel'),
+    ['class' => 'btn btn-sm btn-outline-secondary filter-btn', 'data-filter' => 'retired']);
+echo html_writer::end_div();
 
-$currenttab = $filterstatus ? $filterstatus : 'all';
-print_tabs([$tabs], $currenttab);
+echo html_writer::start_div('mb-3');
+echo html_writer::tag('label', get_string('search', 'moodle') . ':', ['class' => 'mr-2', 'for' => 'materiel-search']);
+echo html_writer::empty_tag('input', [
+    'type' => 'text',
+    'id' => 'materiel-search',
+    'class' => 'form-control d-inline-block',
+    'style' => 'width: 300px;',
+    'placeholder' => get_string('search', 'moodle') . '...'
+]);
+echo html_writer::end_div();
 
-// Get materiel items.
+// Get materiel items - no status filter, get all.
 $filters = [];
 if ($filtertype) {
     $filters['typeid'] = $filtertype;
-}
-if ($filterstatus) {
-    $filters['status'] = $filterstatus;
 }
 
 $materiels = \local_materiel\materiel::get_all($filters);
@@ -91,14 +104,15 @@ if (empty($materiels)) {
 } else {
     $table = new html_table();
     $table->head = [
-        get_string('identifier', 'local_materiel'),
-        get_string('name', 'local_materiel'),
-        get_string('type', 'local_materiel'),
-        get_string('status', 'local_materiel'),
-        get_string('current_user', 'local_materiel'),
+        html_writer::tag('span', get_string('identifier', 'local_materiel'), ['class' => 'sortable', 'data-column' => '0']),
+        html_writer::tag('span', get_string('name', 'local_materiel'), ['class' => 'sortable', 'data-column' => '1']),
+        html_writer::tag('span', get_string('type', 'local_materiel'), ['class' => 'sortable', 'data-column' => '2']),
+        html_writer::tag('span', get_string('status', 'local_materiel'), ['class' => 'sortable', 'data-column' => '3']),
+        html_writer::tag('span', get_string('current_user', 'local_materiel'), ['class' => 'sortable', 'data-column' => '4']),
         get_string('actions', 'local_materiel'),
     ];
-    $table->attributes['class'] = 'generaltable';
+    $table->attributes['class'] = 'generaltable materiel-table';
+    $table->attributes['id'] = 'materiel-table';
 
     foreach ($materiels as $materiel) {
         $type = new \local_materiel\materiel_type($materiel->typeid);
@@ -170,14 +184,21 @@ if (empty($materiels)) {
                 break;
         }
 
-        $row = [
+        $row = new html_table_row([
             html_writer::tag('strong', $materiel->identifier),
             $materiel->name,
             $type->name,
             html_writer::tag('span', get_string('status_' . $materiel->status, 'local_materiel'), ['class' => $statusclass]),
             $currentuser,
             implode(' ', $actions),
-        ];
+        ]);
+
+        // Add data attributes for filtering and sorting.
+        $row->attributes['data-status'] = $materiel->status;
+        $row->attributes['data-type'] = $type->name;
+        $row->attributes['data-identifier'] = strtolower($materiel->identifier);
+        $row->attributes['data-name'] = strtolower($materiel->name);
+        $row->attributes['data-user'] = strtolower($currentuser);
 
         $table->data[] = $row;
     }
