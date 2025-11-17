@@ -68,7 +68,7 @@ function local_materiel_extend_navigation(global_navigation $navigation) {
             navigation_node::TYPE_CUSTOM,
             null,
             'local_materiel',
-            new pix_icon('i/folder', '')
+            new pix_icon('fa-box-open', '', 'fontawesome')
         );
         $node->showinflatnavigation = true;
     }
