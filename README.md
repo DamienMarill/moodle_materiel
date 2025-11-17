@@ -145,8 +145,8 @@ git push origin feature/ma-fonctionnalite
 
 ## Compatibilité
 
-- Moodle 4.0 ou supérieur
-- PHP 7.4 ou supérieur
+- Moodle 3.11 ou supérieur
+- PHP 7.3 ou supérieur
 
 ## Licence
 
