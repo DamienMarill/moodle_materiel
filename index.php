@@ -153,7 +153,8 @@ echo html_writer::link($buildfilterurl('retired'), get_string('status_retired', 
 echo html_writer::end_div();
 
 // Type filter with select dropdown.
-echo html_writer::start_tag('form', ['method' => 'get', 'action' => '/local/materiel/index.php', 'class' => 'mb-3']);
+$typeformurl = new moodle_url('/local/materiel/index.php');
+echo html_writer::start_tag('form', ['method' => 'get', 'action' => $typeformurl->out_omit_querystring(), 'class' => 'mb-3']);
 echo html_writer::tag('label', get_string('type', 'local_materiel') . ':', ['class' => 'mr-2', 'for' => 'type-filter']);
 
 // Get all types.
@@ -188,7 +189,8 @@ if ($order) {
 echo html_writer::end_tag('form');
 
 // Search form using GET.
-echo html_writer::start_tag('form', ['method' => 'get', 'action' => '/local/materiel/index.php', 'class' => 'mb-3']);
+$searchformurl = new moodle_url('/local/materiel/index.php');
+echo html_writer::start_tag('form', ['method' => 'get', 'action' => $searchformurl->out_omit_querystring(), 'class' => 'mb-3']);
 echo html_writer::tag('label', get_string('search', 'moodle') . ':', ['class' => 'mr-2', 'for' => 'materiel-search']);
 echo html_writer::empty_tag('input', [
     'type' => 'text',
