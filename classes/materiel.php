@@ -143,21 +143,57 @@ class materiel {
     /**
      * Get all materiel items
      *
-     * @param array $filters Optional filters
+     * @param array $filters Optional filters (status, typeid, search, sort, order)
      * @return array Array of materiel objects
      */
     public static function get_all($filters = []) {
         global $DB;
 
-        $conditions = [];
+        $params = [];
+        $where = [];
+
+        // Status filter
         if (!empty($filters['status'])) {
-            $conditions['status'] = $filters['status'];
-        }
-        if (!empty($filters['typeid'])) {
-            $conditions['typeid'] = $filters['typeid'];
+            $where[] = "status = :status";
+            $params['status'] = $filters['status'];
         }
 
-        $records = $DB->get_records('local_materiel', $conditions, 'name ASC');
+        // Type filter
+        if (!empty($filters['typeid'])) {
+            $where[] = "typeid = :typeid";
+            $params['typeid'] = $filters['typeid'];
+        }
+
+        // Search filter
+        if (!empty($filters['search'])) {
+            $search = '%' . $DB->sql_like_escape($filters['search']) . '%';
+            $where[] = $DB->sql_like('identifier', ':search1', false) . ' OR ' .
+                       $DB->sql_like('name', ':search2', false);
+            $params['search1'] = $search;
+            $params['search2'] = $search;
+        }
+
+        // Build WHERE clause
+        $sql = "SELECT * FROM {local_materiel}";
+        if (!empty($where)) {
+            $sql .= " WHERE " . implode(' AND ', array_map(function($w) {
+                return "(" . $w . ")";
+            }, $where));
+        }
+
+        // Sorting
+        $sort = !empty($filters['sort']) ? $filters['sort'] : 'name';
+        $order = !empty($filters['order']) && $filters['order'] === 'desc' ? 'DESC' : 'ASC';
+
+        // Validate sort column to prevent SQL injection
+        $validcolumns = ['identifier', 'name', 'status', 'timecreated', 'timemodified'];
+        if (!in_array($sort, $validcolumns)) {
+            $sort = 'name';
+        }
+
+        $sql .= " ORDER BY {$sort} {$order}";
+
+        $records = $DB->get_records_sql($sql, $params);
         $items = [];
 
         foreach ($records as $record) {

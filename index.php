@@ -33,199 +33,38 @@ if (!local_materiel_user_has_access()) {
 }
 
 $context = context_system::instance();
-$PAGE->set_url(new moodle_url('/local/materiel/index.php'));
+
+// Get filter and sort parameters.
+$filterstatus = optional_param('status', '', PARAM_ALPHA);
+$filtertype = optional_param('type', 0, PARAM_INT);
+$search = optional_param('search', '', PARAM_TEXT);
+$sort = optional_param('sort', 'name', PARAM_ALPHA);
+$order = optional_param('order', 'asc', PARAM_ALPHA);
+
+// Build URL for this page with current parameters.
+$baseurl = new moodle_url('/local/materiel/index.php');
+$currentparams = [];
+if ($filterstatus) {
+    $currentparams['status'] = $filterstatus;
+}
+if ($filtertype) {
+    $currentparams['type'] = $filtertype;
+}
+if ($search) {
+    $currentparams['search'] = $search;
+}
+if ($sort) {
+    $currentparams['sort'] = $sort;
+}
+if ($order) {
+    $currentparams['order'] = $order;
+}
+
+$PAGE->set_url($baseurl, $currentparams);
 $PAGE->set_context($context);
 $PAGE->set_title(get_string('pluginname', 'local_materiel'));
 $PAGE->set_heading(get_string('pluginname', 'local_materiel'));
 $PAGE->requires->css(new moodle_url('/local/materiel/styles/materiel.css'));
-
-// Add JavaScript for filtering and sorting using Moodle's official method
-$jscode = <<<'EOD'
-(function() {
-    'use strict';
-
-    function init() {
-        var table = document.getElementById('materiel-table');
-        if (!table) {
-            console.log('Materiel table not found');
-            return;
-        }
-
-        console.log('Initializing materiel table filters');
-
-        var tbody = table.querySelector('tbody');
-        var filterButtons = document.querySelectorAll('.filter-btn');
-        var searchInput = document.getElementById('materiel-search');
-        var sortableHeaders = table.querySelectorAll('.sortable');
-
-        console.log('Filter buttons found:', filterButtons.length);
-        console.log('Sortable headers found:', sortableHeaders.length);
-
-        var currentFilter = 'all';
-        var currentSort = {column: -1, ascending: true};
-
-        // Filter functionality
-        filterButtons.forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                console.log('Filter button clicked:', this.getAttribute('data-filter'));
-
-                // Remove active class from all buttons
-                filterButtons.forEach(function(b) {
-                    b.classList.remove('active');
-                });
-                // Add active class to clicked button
-                this.classList.add('active');
-
-                currentFilter = this.getAttribute('data-filter');
-                applyFilters();
-            });
-        });
-
-        // Search functionality
-        if (searchInput) {
-            searchInput.addEventListener('input', function() {
-                console.log('Search input:', this.value);
-                applyFilters();
-            });
-        }
-
-        // Sorting functionality
-        sortableHeaders.forEach(function(header) {
-            header.style.cursor = 'pointer';
-            header.style.userSelect = 'none';
-
-            // Add sort indicator
-            var indicator = document.createElement('span');
-            indicator.className = 'sort-indicator';
-            indicator.style.marginLeft = '5px';
-            indicator.style.opacity = '0.3';
-            indicator.textContent = '▼';
-            header.appendChild(indicator);
-
-            header.addEventListener('click', function() {
-                var column = parseInt(this.getAttribute('data-column'));
-
-                // Toggle sort direction if clicking same column
-                if (currentSort.column === column) {
-                    currentSort.ascending = !currentSort.ascending;
-                } else {
-                    currentSort.column = column;
-                    currentSort.ascending = true;
-                }
-
-                sortTable(column, currentSort.ascending);
-                updateSortIndicators();
-            });
-        });
-
-        function applyFilters() {
-            var searchText = searchInput ? searchInput.value.toLowerCase() : '';
-            var rows = tbody.querySelectorAll('tr');
-
-            console.log('Applying filters - status:', currentFilter, 'search:', searchText);
-            console.log('Total rows:', rows.length);
-
-            var visibleCount = 0;
-            rows.forEach(function(row) {
-                var status = row.getAttribute('data-status');
-                var identifier = row.getAttribute('data-identifier') || '';
-                var name = row.getAttribute('data-name') || '';
-                var type = row.getAttribute('data-type') || '';
-                var user = row.getAttribute('data-user') || '';
-
-                // Check status filter
-                var statusMatch = (currentFilter === 'all' || status === currentFilter);
-
-                // Check search text
-                var searchMatch = (
-                    searchText === '' ||
-                    identifier.indexOf(searchText) !== -1 ||
-                    name.indexOf(searchText) !== -1 ||
-                    type.toLowerCase().indexOf(searchText) !== -1 ||
-                    user.indexOf(searchText) !== -1
-                );
-
-                // Show or hide row
-                if (statusMatch && searchMatch) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            console.log('Visible rows after filter:', visibleCount);
-        }
-
-        function sortTable(columnIndex, ascending) {
-            var rows = Array.from(tbody.querySelectorAll('tr'));
-
-            rows.sort(function(a, b) {
-                var aCell = a.cells[columnIndex];
-                var bCell = b.cells[columnIndex];
-
-                if (!aCell || !bCell) {
-                    return 0;
-                }
-
-                var aText = aCell.textContent.trim();
-                var bText = bCell.textContent.trim();
-
-                // Try numeric comparison first
-                var aNum = parseFloat(aText);
-                var bNum = parseFloat(bText);
-
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                    return ascending ? (aNum - bNum) : (bNum - aNum);
-                }
-
-                // String comparison
-                if (ascending) {
-                    return aText.localeCompare(bText);
-                } else {
-                    return bText.localeCompare(aText);
-                }
-            });
-
-            // Re-append rows in sorted order
-            rows.forEach(function(row) {
-                tbody.appendChild(row);
-            });
-
-            // Re-apply filters to maintain filter state
-            applyFilters();
-        }
-
-        function updateSortIndicators() {
-            sortableHeaders.forEach(function(header) {
-                var indicator = header.querySelector('.sort-indicator');
-                var column = parseInt(header.getAttribute('data-column'));
-
-                if (column === currentSort.column) {
-                    indicator.style.opacity = '1';
-                    indicator.textContent = currentSort.ascending ? '▲' : '▼';
-                } else {
-                    indicator.style.opacity = '0.3';
-                    indicator.textContent = '▼';
-                }
-            });
-        }
-    }
-
-    // Execute when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
-EOD;
-
-$PAGE->requires->js_init_code($jscode);
-
-// Get filter parameters.
-$filtertype = optional_param('type', 0, PARAM_INT);
 
 echo $OUTPUT->header();
 
@@ -248,36 +87,112 @@ echo html_writer::link(
 );
 echo html_writer::end_div();
 
-// Filter buttons and search.
+// Filter buttons using links.
 echo html_writer::start_div('mb-3');
 echo html_writer::tag('label', get_string('filter_by_status', 'local_materiel') . ':', ['class' => 'mr-2']);
-echo html_writer::tag('button', get_string('all_materiel', 'local_materiel'),
-    ['class' => 'btn btn-sm btn-outline-primary mr-2 filter-btn active', 'data-filter' => 'all']);
-echo html_writer::tag('button', get_string('materiel_available', 'local_materiel'),
-    ['class' => 'btn btn-sm btn-outline-success mr-2 filter-btn', 'data-filter' => 'available']);
-echo html_writer::tag('button', get_string('materiel_in_use', 'local_materiel'),
-    ['class' => 'btn btn-sm btn-outline-warning mr-2 filter-btn', 'data-filter' => 'in_use']);
-echo html_writer::tag('button', get_string('status_maintenance', 'local_materiel'),
-    ['class' => 'btn btn-sm btn-outline-info mr-2 filter-btn', 'data-filter' => 'maintenance']);
-echo html_writer::tag('button', get_string('status_retired', 'local_materiel'),
-    ['class' => 'btn btn-sm btn-outline-secondary filter-btn', 'data-filter' => 'retired']);
+
+// Helper function to build filter URL.
+$buildfilterurl = function($status) use ($search, $sort, $order, $filtertype) {
+    $params = [];
+    if ($status) {
+        $params['status'] = $status;
+    }
+    if ($search) {
+        $params['search'] = $search;
+    }
+    if ($sort) {
+        $params['sort'] = $sort;
+    }
+    if ($order) {
+        $params['order'] = $order;
+    }
+    if ($filtertype) {
+        $params['type'] = $filtertype;
+    }
+    return new moodle_url('/local/materiel/index.php', $params);
+};
+
+// All materials (no status filter).
+$classes = 'btn btn-sm btn-outline-primary mr-2';
+if (empty($filterstatus)) {
+    $classes .= ' active';
+}
+echo html_writer::link($buildfilterurl(''), get_string('all_materiel', 'local_materiel'), ['class' => $classes]);
+
+// Available.
+$classes = 'btn btn-sm btn-outline-success mr-2';
+if ($filterstatus === 'available') {
+    $classes .= ' active';
+}
+echo html_writer::link($buildfilterurl('available'), get_string('materiel_available', 'local_materiel'), ['class' => $classes]);
+
+// In use.
+$classes = 'btn btn-sm btn-outline-warning mr-2';
+if ($filterstatus === 'in_use') {
+    $classes .= ' active';
+}
+echo html_writer::link($buildfilterurl('in_use'), get_string('materiel_in_use', 'local_materiel'), ['class' => $classes]);
+
+// Maintenance.
+$classes = 'btn btn-sm btn-outline-info mr-2';
+if ($filterstatus === 'maintenance') {
+    $classes .= ' active';
+}
+echo html_writer::link($buildfilterurl('maintenance'), get_string('status_maintenance', 'local_materiel'), ['class' => $classes]);
+
+// Retired.
+$classes = 'btn btn-sm btn-outline-secondary';
+if ($filterstatus === 'retired') {
+    $classes .= ' active';
+}
+echo html_writer::link($buildfilterurl('retired'), get_string('status_retired', 'local_materiel'), ['class' => $classes]);
+
 echo html_writer::end_div();
 
-echo html_writer::start_div('mb-3');
+// Search form using GET.
+echo html_writer::start_tag('form', ['method' => 'get', 'action' => '/local/materiel/index.php', 'class' => 'mb-3']);
 echo html_writer::tag('label', get_string('search', 'moodle') . ':', ['class' => 'mr-2', 'for' => 'materiel-search']);
 echo html_writer::empty_tag('input', [
     'type' => 'text',
     'id' => 'materiel-search',
+    'name' => 'search',
     'class' => 'form-control d-inline-block',
     'style' => 'width: 300px;',
-    'placeholder' => get_string('search', 'moodle') . '...'
+    'placeholder' => get_string('search', 'moodle') . '...',
+    'value' => $search
 ]);
-echo html_writer::end_div();
+echo html_writer::empty_tag('input', ['type' => 'submit', 'value' => get_string('search', 'moodle'), 'class' => 'btn btn-primary ml-2']);
+// Preserve other parameters.
+if ($filterstatus) {
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'status', 'value' => $filterstatus]);
+}
+if ($filtertype) {
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'type', 'value' => $filtertype]);
+}
+if ($sort) {
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sort', 'value' => $sort]);
+}
+if ($order) {
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'order', 'value' => $order]);
+}
+echo html_writer::end_tag('form');
 
-// Get materiel items - no status filter, get all.
+// Get materiel items with filters, sorting and search.
 $filters = [];
+if ($filterstatus) {
+    $filters['status'] = $filterstatus;
+}
 if ($filtertype) {
     $filters['typeid'] = $filtertype;
+}
+if ($search) {
+    $filters['search'] = $search;
+}
+if ($sort) {
+    $filters['sort'] = $sort;
+}
+if ($order) {
+    $filters['order'] = $order;
 }
 
 $materiels = \local_materiel\materiel::get_all($filters);
@@ -286,13 +201,43 @@ $materiels = \local_materiel\materiel::get_all($filters);
 if (empty($materiels)) {
     echo html_writer::tag('p', get_string('no_materiel', 'local_materiel'), ['class' => 'alert alert-info']);
 } else {
+    // Helper function to build sort URL.
+    $buildsorturl = function($column) use ($filterstatus, $search, $sort, $order, $filtertype) {
+        $params = [];
+        if ($filterstatus) {
+            $params['status'] = $filterstatus;
+        }
+        if ($search) {
+            $params['search'] = $search;
+        }
+        if ($filtertype) {
+            $params['type'] = $filtertype;
+        }
+        $params['sort'] = $column;
+        // Toggle order if clicking current sort column.
+        if ($sort === $column) {
+            $params['order'] = ($order === 'asc') ? 'desc' : 'asc';
+        } else {
+            $params['order'] = 'asc';
+        }
+        return new moodle_url('/local/materiel/index.php', $params);
+    };
+
+    // Helper function to get sort indicator.
+    $getsortindicator = function($column) use ($sort, $order) {
+        if ($sort === $column) {
+            return ($order === 'asc') ? ' ▲' : ' ▼';
+        }
+        return '';
+    };
+
     $table = new html_table();
     $table->head = [
-        html_writer::tag('span', get_string('identifier', 'local_materiel'), ['class' => 'sortable', 'data-column' => '0']),
-        html_writer::tag('span', get_string('name', 'local_materiel'), ['class' => 'sortable', 'data-column' => '1']),
-        html_writer::tag('span', get_string('type', 'local_materiel'), ['class' => 'sortable', 'data-column' => '2']),
-        html_writer::tag('span', get_string('status', 'local_materiel'), ['class' => 'sortable', 'data-column' => '3']),
-        html_writer::tag('span', get_string('current_user', 'local_materiel'), ['class' => 'sortable', 'data-column' => '4']),
+        html_writer::link($buildsorturl('identifier'), get_string('identifier', 'local_materiel') . $getsortindicator('identifier')),
+        html_writer::link($buildsorturl('name'), get_string('name', 'local_materiel') . $getsortindicator('name')),
+        get_string('type', 'local_materiel'),
+        html_writer::link($buildsorturl('status'), get_string('status', 'local_materiel') . $getsortindicator('status')),
+        get_string('current_user', 'local_materiel'),
         get_string('actions', 'local_materiel'),
     ];
     $table->attributes['class'] = 'generaltable materiel-table';
@@ -376,13 +321,6 @@ if (empty($materiels)) {
             $currentuser,
             implode(' ', $actions),
         ]);
-
-        // Add data attributes for filtering and sorting.
-        $row->attributes['data-status'] = $materiel->status;
-        $row->attributes['data-type'] = $type->name;
-        $row->attributes['data-identifier'] = strtolower($materiel->identifier);
-        $row->attributes['data-name'] = strtolower($materiel->name);
-        $row->attributes['data-user'] = strtolower($currentuser);
 
         $table->data[] = $row;
     }
