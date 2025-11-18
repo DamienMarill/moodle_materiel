@@ -253,7 +253,8 @@ if (empty($materiels)) {
             if (!empty($logs) && $logs[0]->action == \local_materiel\materiel_log::ACTION_CHECKOUT && $logs[0]->userid) {
                 $user = $DB->get_record('user', ['id' => $logs[0]->userid]);
                 if ($user) {
-                    $currentuser = fullname($user);
+                    $userpicture = $OUTPUT->user_picture($user, ['size' => 35, 'class' => 'mr-2']);
+                    $currentuser = $userpicture . ' ' . fullname($user);
                 }
             }
         }

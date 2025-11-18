@@ -70,7 +70,8 @@ if (empty($logs)) {
         if ($log->userid) {
             $userrecord = $DB->get_record('user', ['id' => $log->userid]);
             if ($userrecord) {
-                $user = fullname($userrecord);
+                $userpicture = $OUTPUT->user_picture($userrecord, ['size' => 35, 'class' => 'mr-2']);
+                $user = $userpicture . ' ' . fullname($userrecord);
             }
         }
 
@@ -78,7 +79,8 @@ if (empty($logs)) {
         if ($log->actionby) {
             $actionbyrecord = $DB->get_record('user', ['id' => $log->actionby]);
             if ($actionbyrecord) {
-                $actionby = fullname($actionbyrecord);
+                $actionbypicture = $OUTPUT->user_picture($actionbyrecord, ['size' => 35, 'class' => 'mr-2']);
+                $actionby = $actionbypicture . ' ' . fullname($actionbyrecord);
             }
         }
 
