@@ -54,8 +54,9 @@ if ($materiel->status != \local_materiel\materiel::STATUS_IN_USE) {
 }
 
 if ($confirm && confirm_sesskey()) {
-    // Update materiel status.
+    // Update materiel status and clear user.
     $materiel->status = \local_materiel\materiel::STATUS_AVAILABLE;
+    $materiel->userid = null;
     $materiel->save();
 
     // Create log entry.

@@ -73,6 +73,30 @@ class materiel_form extends \moodleform {
         $mform->addElement('select', 'status', get_string('status', 'local_materiel'), $statusoptions);
         $mform->setDefault('status', \local_materiel\materiel::STATUS_AVAILABLE);
 
+        // User autocomplete (shown only when status is 'in_use').
+        $options = [
+            'ajax' => 'core_user/form_user_selector',
+            'multiple' => false,
+            'valuehtmlcallback' => function($userid) {
+                global $DB, $OUTPUT;
+                if (empty($userid)) {
+                    return '';
+                }
+                $user = $DB->get_record('user', ['id' => $userid]);
+                if (!$user) {
+                    return '';
+                }
+                $useroptiondata = [
+                    'fullname' => fullname($user),
+                    'email' => $user->email,
+                ];
+                return $OUTPUT->render_from_template('core_user/form_user_selector_suggestion', $useroptiondata);
+            },
+        ];
+
+        $mform->addElement('autocomplete', 'userid', get_string('user', 'local_materiel'), [], $options);
+        $mform->hideIf('userid', 'status', 'neq', \local_materiel\materiel::STATUS_IN_USE);
+
         // Notes.
         $mform->addElement('textarea', 'notes', get_string('notes', 'local_materiel'), ['rows' => 5, 'cols' => 50]);
         $mform->setType('notes', PARAM_TEXT);
@@ -104,6 +128,16 @@ class materiel_form extends \moodleform {
 
         if ($DB->record_exists_sql($sql, $params)) {
             $errors['identifier'] = get_string('identifier_exists', 'local_materiel');
+        }
+
+        // If status is 'in_use', user must be selected.
+        if ($data['status'] === \local_materiel\materiel::STATUS_IN_USE && empty($data['userid'])) {
+            $errors['userid'] = get_string('required');
+        }
+
+        // If status is not 'in_use', clear userid.
+        if ($data['status'] !== \local_materiel\materiel::STATUS_IN_USE) {
+            $data['userid'] = null;
         }
 
         return $errors;

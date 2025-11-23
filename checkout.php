@@ -59,8 +59,9 @@ $mform->set_data(['id' => $id]);
 if ($mform->is_cancelled()) {
     redirect($returnurl);
 } else if ($data = $mform->get_data()) {
-    // Update materiel status.
+    // Update materiel status and user.
     $materiel->status = \local_materiel\materiel::STATUS_IN_USE;
+    $materiel->userid = $data->userid;
     $materiel->save();
 
     // Create log entry.

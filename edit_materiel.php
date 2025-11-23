@@ -55,6 +55,7 @@ if ($id) {
         'identifier' => $materiel->identifier,
         'name' => $materiel->name,
         'status' => $materiel->status,
+        'userid' => $materiel->userid ?? null,
         'notes' => $materiel->notes,
     ];
     $mform->set_data($formdata);
@@ -67,6 +68,14 @@ if ($mform->is_cancelled()) {
     $materiel->identifier = $data->identifier;
     $materiel->name = $data->name;
     $materiel->status = $data->status;
+
+    // Set userid only if status is 'in_use'.
+    if ($data->status === \local_materiel\materiel::STATUS_IN_USE) {
+        $materiel->userid = $data->userid ?? null;
+    } else {
+        $materiel->userid = null;
+    }
+
     $materiel->notes = $data->notes;
 
     if ($materiel->save()) {

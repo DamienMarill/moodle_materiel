@@ -46,6 +46,9 @@ class materiel {
     /** @var string Status (available, in_use, maintenance, retired) */
     public $status;
 
+    /** @var int User ID (current user if in use) */
+    public $userid;
+
     /** @var string Notes */
     public $notes;
 
@@ -89,6 +92,7 @@ class materiel {
             $this->identifier = $record->identifier;
             $this->name = $record->name;
             $this->status = $record->status;
+            $this->userid = $record->userid ?? null;
             $this->notes = $record->notes;
             $this->timecreated = $record->timecreated;
             $this->timemodified = $record->timemodified;
@@ -111,6 +115,7 @@ class materiel {
         $record->identifier = $this->identifier;
         $record->name = $this->name;
         $record->status = $this->status;
+        $record->userid = $this->userid ?? null;
         $record->notes = $this->notes;
         $record->timemodified = $now;
 
@@ -203,6 +208,7 @@ class materiel {
             $item->identifier = $record->identifier;
             $item->name = $record->name;
             $item->status = $record->status;
+            $item->userid = $record->userid ?? null;
             $item->notes = $record->notes;
             $item->timecreated = $record->timecreated;
             $item->timemodified = $record->timemodified;
@@ -228,6 +234,7 @@ class materiel {
             $item->identifier = $record->identifier;
             $item->name = $record->name;
             $item->status = $record->status;
+            $item->userid = $record->userid ?? null;
             $item->notes = $record->notes;
             $item->timecreated = $record->timecreated;
             $item->timemodified = $record->timemodified;

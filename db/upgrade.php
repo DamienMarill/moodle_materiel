@@ -63,5 +63,21 @@ function xmldb_local_materiel_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025111704, 'local', 'materiel');
     }
 
+    // Version 2025112301: Add userid field to local_materiel table.
+    if ($oldversion < 2025112301) {
+        $table = new xmldb_table('local_materiel');
+        $field = new xmldb_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'status');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Add foreign key.
+        $key = new xmldb_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $dbman->add_key($table, $key);
+
+        upgrade_plugin_savepoint(true, 2025112301, 'local', 'materiel');
+    }
+
     return true;
 }
