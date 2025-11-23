@@ -63,20 +63,23 @@ function xmldb_local_materiel_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025111704, 'local', 'materiel');
     }
 
-    // Version 2025112301: Add userid field to local_materiel table.
-    if ($oldversion < 2025112301) {
+    // Version 2025112302: Remove userid field from local_materiel table (use logs instead).
+    if ($oldversion < 2025112302) {
         $table = new xmldb_table('local_materiel');
-        $field = new xmldb_field('userid', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'status');
+        $field = new xmldb_field('userid');
 
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
+        // Drop foreign key if exists.
+        $key = new xmldb_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        if ($dbman->find_key_name($table, $key)) {
+            $dbman->drop_key($table, $key);
         }
 
-        // Add foreign key.
-        $key = new xmldb_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
-        $dbman->add_key($table, $key);
+        // Drop field if exists.
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
 
-        upgrade_plugin_savepoint(true, 2025112301, 'local', 'materiel');
+        upgrade_plugin_savepoint(true, 2025112302, 'local', 'materiel');
     }
 
     return true;

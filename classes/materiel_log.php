@@ -221,6 +221,32 @@ class materiel_log {
     }
 
     /**
+     * Get current user for a materiel (from latest checkout log)
+     *
+     * @param int $materielid Materiel ID
+     * @return int|null User ID or null if not checked out
+     */
+    public static function get_current_user($materielid) {
+        global $DB;
+
+        // Get the most recent checkout log for this materiel.
+        $sql = "SELECT userid
+                FROM {local_materiel_logs}
+                WHERE materielid = :materielid
+                  AND action = :action
+                ORDER BY timecreated DESC
+                LIMIT 1";
+
+        $params = [
+            'materielid' => $materielid,
+            'action' => self::ACTION_CHECKOUT,
+        ];
+
+        $record = $DB->get_record_sql($sql, $params);
+        return $record ? $record->userid : null;
+    }
+
+    /**
      * Get available action values
      *
      * @return array Action values

@@ -22,7 +22,6 @@
         <FIELD NAME="identifier" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Identifiant unique (numéro de série, code)"/>
         <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Nom ou description du matériel"/>
         <FIELD NAME="status" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="available" SEQUENCE="false" COMMENT="Statut: available, in_use, maintenance, retired"/>
-        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Utilisateur actuel (si en cours d'utilisation)"/>
         <FIELD NAME="notes" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Notes ou remarques"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -30,7 +29,6 @@
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
         <KEY NAME="typeid" TYPE="foreign" FIELDS="typeid" REFTABLE="local_materiel_types" REFFIELDS="id"/>
-        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
       </KEYS>
       <INDEXES>
         <INDEX NAME="identifier" UNIQUE="true" FIELDS="identifier" COMMENT="Identifiant unique"/>

@@ -49,13 +49,19 @@ $mform = new \local_materiel\form\materiel_form();
 
 // Set form data.
 if ($id) {
+    // Get current user from logs if material is in use.
+    $currentuserid = null;
+    if ($materiel->status === \local_materiel\materiel::STATUS_IN_USE) {
+        $currentuserid = \local_materiel\materiel_log::get_current_user($materiel->id);
+    }
+
     $formdata = [
         'id' => $materiel->id,
         'typeid' => $materiel->typeid,
         'identifier' => $materiel->identifier,
         'name' => $materiel->name,
         'status' => $materiel->status,
-        'userid' => $materiel->userid ?? null,
+        'userid' => $currentuserid,
         'notes' => $materiel->notes,
     ];
     $mform->set_data($formdata);
@@ -64,21 +70,28 @@ if ($id) {
 if ($mform->is_cancelled()) {
     redirect($returnurl);
 } else if ($data = $mform->get_data()) {
+    $oldstatus = $materiel->status;
+    $olduserid = $id ? \local_materiel\materiel_log::get_current_user($materiel->id) : null;
+
     $materiel->typeid = $data->typeid;
     $materiel->identifier = $data->identifier;
     $materiel->name = $data->name;
     $materiel->status = $data->status;
-
-    // Set userid only if status is 'in_use'.
-    if ($data->status === \local_materiel\materiel::STATUS_IN_USE) {
-        $materiel->userid = $data->userid ?? null;
-    } else {
-        $materiel->userid = null;
-    }
-
     $materiel->notes = $data->notes;
 
     if ($materiel->save()) {
+        // Handle user assignment changes via logs.
+        if ($data->status === \local_materiel\materiel::STATUS_IN_USE) {
+            $newuserid = $data->userid ?? null;
+            // Only create a log if the user has changed or if this is a new checkout.
+            if ($newuserid && ($oldstatus !== \local_materiel\materiel::STATUS_IN_USE || $olduserid != $newuserid)) {
+                \local_materiel\materiel_log::create_checkout($materiel->id, $newuserid, '');
+            }
+        } else if ($oldstatus === \local_materiel\materiel::STATUS_IN_USE && $data->status !== \local_materiel\materiel::STATUS_IN_USE) {
+            // Status changed from in_use to something else - create checkin log.
+            \local_materiel\materiel_log::create_checkin($materiel->id, '');
+        }
+
         redirect($returnurl, get_string('materiel_saved', 'local_materiel'), null, \core\output\notification::NOTIFY_SUCCESS);
     } else {
         redirect($returnurl, get_string('error_saving', 'local_materiel'), null, \core\output\notification::NOTIFY_ERROR);
