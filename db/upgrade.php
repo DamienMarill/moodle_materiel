@@ -82,5 +82,99 @@ function xmldb_local_materiel_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025112302, 'local', 'materiel');
     }
 
+    // Version 2025112601: Migrate from cohort to role-based access.
+    if ($oldversion < 2025112601) {
+        $context = context_system::instance();
+
+        // Check if role already exists.
+        $role = $DB->get_record('role', ['shortname' => 'mmi_materiel']);
+
+        if (!$role) {
+            // Create the role.
+            $roleid = create_role(
+                'MMI Matériel',
+                'mmi_materiel',
+                'Permet d\'accéder au système de gestion de matériel MMI et d\'utiliser le sélecteur d\'utilisateur',
+                'user'
+            );
+
+            // Set role context levels (system level).
+            set_role_contextlevels($roleid, [CONTEXT_SYSTEM]);
+
+            // Assign capabilities to the role.
+            $capabilities = [
+                'local/materiel:view' => CAP_ALLOW,
+                'local/materiel:manage' => CAP_ALLOW,
+                'moodle/user:viewalldetails' => CAP_ALLOW,
+                'moodle/site:viewfullnames' => CAP_ALLOW,
+            ];
+
+            foreach ($capabilities as $capability => $permission) {
+                assign_capability($capability, $permission, $roleid, $context->id, true);
+            }
+
+            mtrace("Created role 'MMI Matériel' with ID: {$roleid}");
+        } else {
+            $roleid = $role->id;
+            mtrace("Role 'MMI Matériel' already exists with ID: {$roleid}");
+
+            // Make sure the role has all required capabilities.
+            $capabilities = [
+                'local/materiel:view' => CAP_ALLOW,
+                'local/materiel:manage' => CAP_ALLOW,
+                'moodle/user:viewalldetails' => CAP_ALLOW,
+                'moodle/site:viewfullnames' => CAP_ALLOW,
+            ];
+
+            foreach ($capabilities as $capability => $permission) {
+                assign_capability($capability, $permission, $roleid, $context->id, true);
+            }
+
+            mtrace("Updated capabilities for role 'MMI Matériel'");
+        }
+
+        // Migrate users from cohort to role.
+        $cohort = $DB->get_record('cohort', ['idnumber' => 'MMI_materiel']);
+
+        if ($cohort) {
+            // Get all cohort members.
+            $members = $DB->get_records('cohort_members', ['cohortid' => $cohort->id]);
+
+            if (!empty($members)) {
+                $count = 0;
+                foreach ($members as $member) {
+                    // Check if user already has the role.
+                    $roleassignment = $DB->get_record('role_assignments', [
+                        'roleid' => $roleid,
+                        'contextid' => $context->id,
+                        'userid' => $member->userid,
+                    ]);
+
+                    if (!$roleassignment) {
+                        // Assign role to user at system context.
+                        role_assign($roleid, $member->userid, $context->id);
+                        $count++;
+                    }
+                }
+
+                mtrace("Assigned role to {$count} users from cohort 'MMI_materiel'");
+            } else {
+                mtrace("No members found in cohort 'MMI_materiel'");
+            }
+
+            // Delete cohort members first.
+            $DB->delete_records('cohort_members', ['cohortid' => $cohort->id]);
+
+            // Delete the cohort.
+            cohort_delete_cohort($cohort);
+
+            mtrace("Deleted cohort 'MMI_materiel'");
+        } else {
+            mtrace("Cohort 'MMI_materiel' not found, skipping migration");
+        }
+
+        upgrade_plugin_savepoint(true, 2025112601, 'local', 'materiel');
+    }
+
     return true;
 }

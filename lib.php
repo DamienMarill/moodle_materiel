@@ -25,10 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 /**
- * Check if user is member of MMI_materiel cohort
+ * Check if user has the MMI Matériel role
  *
  * @param int $userid User ID (default current user)
- * @return bool True if user is member of the cohort
+ * @return bool True if user has the role
  */
 function local_materiel_user_has_access($userid = null) {
     global $DB, $USER;
@@ -37,19 +37,19 @@ function local_materiel_user_has_access($userid = null) {
         $userid = $USER->id;
     }
 
-    // Check if MMI_materiel cohort exists.
-    $cohort = $DB->get_record('cohort', ['idnumber' => 'MMI_materiel']);
-    if (!$cohort) {
+    // Get system context.
+    $context = context_system::instance();
+
+    // Check if MMI_materiel role exists.
+    $role = $DB->get_record('role', ['shortname' => 'mmi_materiel']);
+    if (!$role) {
         return false;
     }
 
-    // Check if user is member of the cohort.
-    $ismember = $DB->record_exists('cohort_members', [
-        'cohortid' => $cohort->id,
-        'userid' => $userid,
-    ]);
+    // Check if user has the role assigned at system level.
+    $hasrole = user_has_role_assignment($userid, $role->id, $context->id);
 
-    return $ismember;
+    return $hasrole;
 }
 
 /**
@@ -60,7 +60,7 @@ function local_materiel_user_has_access($userid = null) {
 function local_materiel_extend_navigation(global_navigation $navigation) {
     global $PAGE, $USER;
 
-    // Check if user has access through cohort membership.
+    // Check if user has access through role assignment.
     if (local_materiel_user_has_access($USER->id)) {
         $node = $navigation->add(
             get_string('materiel', 'local_materiel'),
